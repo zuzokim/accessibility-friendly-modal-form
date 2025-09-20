@@ -12,7 +12,8 @@
     "@emotion/styled": "^11.11.4",
     "modern-normalize": "^3.0.1",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-hook-form": "^7.50.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.2",

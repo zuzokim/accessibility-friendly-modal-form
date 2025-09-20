@@ -7,9 +7,14 @@ import {
 } from "react";
 import styled from "@emotion/styled";
 import { css } from "@emotion/react";
+import { useForm, type SubmitHandler } from "react-hook-form";
 
 const MODAL_TITLE = "modal-title";
 const MODAL_DESCRIPTION = "modal-description";
+const ERROR_NAME = "error-name";
+const ERROR_EMAIL = "error-email";
+const ERROR_EXPERIENCE = "error-experience";
+const ERROR_GITHUB = "error-github";
 
 const focusVisible = css`
   &:focus-visible {
@@ -124,10 +129,22 @@ const Input = styled.input`
   ${focusVisible}
 `;
 
+const Select = styled.select`
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  width: 100%;
+  background-color: white;
+
+  ${focusVisible}
+`;
+
 const FormActions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  margin-top: 20px;
 `;
 
 const buttonStyle = css`
@@ -158,6 +175,20 @@ const SubmitButton = styled.button`
   ${buttonStyle}
 `;
 
+const ErrorMessage = styled.div`
+  color: #d32f2f;
+  font-size: 14px;
+  margin-top: 4px;
+  margin-bottom: 0;
+`;
+
+interface FormData {
+  name: string;
+  email: string;
+  experience: string;
+  github?: string;
+}
+
 const ModalFormPage = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const openButtonRef = useRef<HTMLButtonElement>(null);
@@ -165,9 +196,24 @@ const ModalFormPage = () => {
   const modalRef = useRef<HTMLDialogElement>(null);
   const modalContentRef = useRef<HTMLDivElement>(null);
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<FormData>({
+    defaultValues: {
+      name: "",
+      email: "",
+      experience: "",
+      github: "",
+    },
+  });
+
   const openModal = () => {
     setIsModalOpen(true);
     modalRef.current?.showModal();
+    reset();
   };
 
   const closeModal = () => {
@@ -186,6 +232,11 @@ const ModalFormPage = () => {
     if (modalRef.current === event.target) {
       closeModal();
     }
+  };
+
+  const onSubmit: SubmitHandler<FormData> = (data) => {
+    console.log("제출된 데이터:", data);
+    closeModal();
   };
 
   useEffect(() => {
@@ -248,28 +299,87 @@ const ModalFormPage = () => {
               이메일과 FE 경력 연차 등 간단한 정보를 입력해주세요.
             </ModalDescription>
 
-            <FormGroupWrapper>
+            <FormGroupWrapper onSubmit={handleSubmit(onSubmit)}>
               <FormGroup>
                 <Label htmlFor="name">이름 / 닉네임</Label>
-                <Input type="text" id="name" name="name" required />
+                <Input
+                  id="name"
+                  aria-invalid={errors.name ? "true" : "false"}
+                  aria-describedby={errors.name ? ERROR_NAME : undefined}
+                  {...register("name", {
+                    required: "이름을 입력해주세요",
+                    minLength: {
+                      value: 2,
+                      message: "최소 2글자 이상 입력해주세요",
+                    },
+                  })}
+                />
+                {errors.name && (
+                  <ErrorMessage
+                    id={ERROR_NAME}
+                    role="alert"
+                    aria-live="assertive"
+                  >
+                    {errors.name.message}
+                  </ErrorMessage>
+                )}
               </FormGroup>
 
               <FormGroup>
                 <Label htmlFor="email">이메일</Label>
-                <Input type="email" id="email" name="email" required />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="example@example.com"
+                  aria-invalid={errors.email ? "true" : "false"}
+                  aria-describedby={errors.email ? ERROR_EMAIL : undefined}
+                  {...register("email", {
+                    required: "이메일을 입력해주세요",
+                    pattern: {
+                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                      message: "올바른 이메일 형식으로 입력해주세요",
+                    },
+                  })}
+                />
+                {errors.email && (
+                  <ErrorMessage
+                    id="error-email"
+                    role="alert"
+                    aria-live="assertive"
+                  >
+                    {errors.email.message}
+                  </ErrorMessage>
+                )}
               </FormGroup>
 
               <FormGroup>
                 <Label htmlFor="experience">FE 경력 연차</Label>
-                <Input
-                  type="number"
+                <Select
                   id="experience"
-                  name="experience"
-                  placeholder="선택해주세요"
-                  min="0"
-                  step="0.5"
-                  required
-                />
+                  aria-invalid={errors.experience ? "true" : "false"}
+                  aria-describedby={
+                    errors.experience ? ERROR_EXPERIENCE : undefined
+                  }
+                  {...register("experience", {
+                    required: "FE 경력 연차를 선택해주세요",
+                  })}
+                >
+                  <option value="" disabled>
+                    선택해주세요
+                  </option>
+                  <option value="0-3">0-3년차</option>
+                  <option value="4-7">4-7년차</option>
+                  <option value="8+">8년차 이상</option>
+                </Select>
+                {errors.experience && (
+                  <ErrorMessage
+                    id={ERROR_EXPERIENCE}
+                    role="alert"
+                    aria-live="assertive"
+                  >
+                    {errors.experience.message}
+                  </ErrorMessage>
+                )}
               </FormGroup>
 
               <FormGroup>
@@ -279,7 +389,25 @@ const ModalFormPage = () => {
                   id="github"
                   name="github"
                   placeholder="https://github.com/username"
+                  aria-invalid={errors.github ? "true" : "false"}
+                  aria-describedby={errors.github ? ERROR_GITHUB : undefined}
+                  {...register("github", {
+                    pattern: {
+                      value:
+                        /^https:\/\/(www\.)?github\.com\/[a-zA-Z0-9-]+\/?.*$/,
+                      message: "올바른 Github URL 형식으로 입력해주세요",
+                    },
+                  })}
                 />
+                {errors.github && (
+                  <ErrorMessage
+                    id={ERROR_GITHUB}
+                    role="alert"
+                    aria-live="assertive"
+                  >
+                    {errors.github.message}
+                  </ErrorMessage>
+                )}
               </FormGroup>
 
               <FormActions>
